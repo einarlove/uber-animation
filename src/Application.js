@@ -41,8 +41,6 @@ const Container = styled.div`
   flex: auto;
 `
 
-const MoreContent = styled.div`
-`
 export default () => (
   <MobileFrame>
     <Container>

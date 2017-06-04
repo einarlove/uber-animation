@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "gsap": "^1.19.1",
     "react": "^15.5.4",
+    "react-click-outside": "tj/react-click-outside",
     "react-dom": "^15.5.4",
     "react-google-maps": "^6.3.0",
     "react-router-dom": "^4.1.1",
     "styled-components": "^2.0.0"
   },
   "devDependencies": {
+    "eslint": "^3.19.0",
     "react-scripts": "1.0.6"
   },
   "scripts": {
