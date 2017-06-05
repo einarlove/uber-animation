@@ -1,7 +1,8 @@
 import React from 'react'
 import styled from 'styled-components'
 import IOSStatusBar from './IOSStatusBar'
-import { TimelineMax, Sine } from 'gsap'
+import { TimelineMax, TweenLite, Sine, Linear } from 'gsap'
+import registerScrollListener from './registerScrollListener'
 
 const Container = styled.div`
   position: absolute;
@@ -13,6 +14,7 @@ const Container = styled.div`
   flex-direction: column;
   background-color: black;
   pointer-events: none;
+  overflow: scroll;
 `
 
 const Header = styled.header`
@@ -39,9 +41,9 @@ const HeaderTitle = styled.div`
 `
 
 const Cards = styled.div`
-  background-color: black;
   overflow: scroll;
   pointer-events: auto;
+  padding-top: 60px;
 `
 
 const Card = styled.div`
@@ -63,7 +65,8 @@ export default class extends React.Component {
   }
 
   componentDidMount() {
-    this.cardsNode.addEventListener('scroll', this.onScroll)
+    registerScrollListener(this.onScroll, this.cardsNode)
+    const forcedScroll = { scrollTop: -1 }
 
     this.timeline = new TimelineMax({
       paused: true,
@@ -81,9 +84,7 @@ export default class extends React.Component {
           scale: 1.28,
           x: -34,
           y: 55,
-        }, 0)
-        .to(this.cardsNode, 1, {
-          y: 60,
+          ease: Linear.easeNone,
         }, 0)
 
       .addLabel('semi-expanded')
@@ -95,20 +96,17 @@ export default class extends React.Component {
           backgroundColor: 'transparent',
         }, 1.2)
         .to(this.cardsNode, 1, {
-          y: this.cardsNode.offsetHeight - 65,
+          y: this.cardsNode.offsetHeight - 125,
           borderRadius: 4,
           clipPath: 'inset(0 8px)',
         }, 1)
       .addLabel('minimized')
 
-    this.timeline.seek('minimized')
-
-    // setInterval(() => {
-    //   this.setState({ minimized: !this.state.minimized })
-    // }, 2000)
+    this.timeline.seek('semi-expanded')
   }
 
   onScroll = () => {
+    this.timeline.seek(Math.max(0, 1 - (this.cardsNode.scrollTop / 60)))
   }
 
   expand = () => {
@@ -121,9 +119,17 @@ export default class extends React.Component {
 
   minimize = () => {
     this.timeline.timeScale(1.5)
-    this.timeline.tweenTo('minimized', {
-      ease: Sine.easeOut,
-      onComplete: () => this.setState({ minimized: true })
+    const scrollDuration = 0.001 * this.cardsNode.scrollTop
+
+    TweenLite.to(this.cardsNode, scrollDuration, {
+      scrollTo: { y: 0 },
+      ease: Linear.easeNone,
+      onComplete: () => {
+        this.timeline.tweenTo('minimized', {
+          ease: Sine.easeOut,
+          onComplete: () => this.setState({ minimized: true })
+        })
+      }
     })
   }
 
