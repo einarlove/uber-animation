@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import IOSStatusBar from './IOSStatusBar'
-import { TimelineMax, TweenLite, Sine, Linear } from 'gsap'
+import { TimelineMax, TweenLite, Sine, Cubic, Linear } from 'gsap'
 import registerScrollListener from './registerScrollListener'
 import 'gsap/ScrollToPlugin'
 
@@ -50,6 +50,7 @@ const HeaderTitle = styled.div`
 
 const Cards = styled.div`
   overflow: scroll;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   pointer-events: auto;
 `
@@ -72,15 +73,10 @@ export default class extends React.Component {
     minimized: true,
   }
 
-  scrollPosition = {
-    scrollTop: 0,
-  }
-
   componentDidMount() {
     registerScrollListener(this.onScroll, this.cardsNode)
     this.totalScrollLength = this.cardsNode.offsetHeight - 70
     this.semiExpandedAnchor = this.totalScrollLength - 55
-    const scrollPosition = {}
 
     this.timeline = new TimelineMax({ paused: true })
       .set(this.cardsNode, {
@@ -93,51 +89,28 @@ export default class extends React.Component {
       })
 
       .addLabel('expanded')
-        .to(this.titleNode, 1, {
-          scale: 1.28,
-          x: -34,
-          y: 55,
-          ease: Linear.easeNone,
-        }, 0)
-        .fromTo(scrollPosition, 1, { tween: 0 }, {
-          tween: 1,
-          onStart: () => {
-            scrollPosition.start = this.cardsNode.scrollTop
-            scrollPosition.end = this.semiExpandedAnchor
-          },
-          onUpdate: () => {
-            this.cardsNode.scrollTop = mapRange(
-              scrollPosition.tween, 0, 1,
-              scrollPosition.start, scrollPosition.end
-            )
-          }
-        }, 0)
+
+      .to(this.titleNode, 1, {
+        scale: 1.28,
+        x: -34,
+        y: 55,
+        ease: Linear.easeNone,
+      }, 0)
 
       .addLabel('semi-expanded')
-        .fromTo(scrollPosition, 1, { tween: 0 }, {
-          tween: 1,
-          onStart: () => {
-            scrollPosition.start = this.semiExpandedAnchor
-            scrollPosition.end = 0
-          },
-          onUpdate: () => {
-            this.cardsNode.scrollTop = mapRange(
-              scrollPosition.tween, 0, 1,
-              scrollPosition.start, scrollPosition.end
-            )
-          }
-        }, 1)
-        .to(this.titleNode, 0.6, {
-          opacity: 0,
-          y: 130,
-        }, 1)
-        .to(this.node, .4, {
-          backgroundColor: 'transparent',
-        }, 1.6)
-        .to(this.cardsNode, 1, {
-          borderRadius: 4,
-          clipPath: 'inset(0 8px)',
-        }, 1)
+
+      .to(this.node, .4, {
+        backgroundColor: 'transparent',
+      }, 1.6)
+      .to(this.titleNode, 0.6, {
+        opacity: 0,
+        y: 130,
+      }, 1)
+      .to(this.cardsNode, 1, {
+        borderRadius: 4,
+        clipPath: 'inset(0 8px)',
+      }, 1)
+
       .addLabel('minimized')
 
     this.timeline.seek('semi-expanded')
@@ -155,28 +128,20 @@ export default class extends React.Component {
       0, this.timeline.getLabelTime('minimized') - this.timeline.getLabelTime('semi-expanded')
     )
 
-    const position = expandTween + semiExpandTween
-
-    this.timeline.seek(position)
-
-    // console.log('on scroll', scrollTop)
-    this.scrollPosition.scrollTop = scrollTop
+    this.timeline.seek(expandTween + semiExpandTween)
   }
 
   expand = () => {
-    this.timeline.timeScale(2.5)
-    this.timeline.tweenTo('semi-expanded', {
-      ease: Sine.easeOut,
-      onComplete: () => this.setState({ minimized: false }),
+    TweenLite.to(this.cardsNode, .5, {
+      scrollTo: { y: this.semiExpandedAnchor },
+      ease: Cubic.easeOut,
     })
   }
 
   minimize = () => {
-    this.timeline.timeScale(1.5)
-
-    this.timeline.tweenTo('minimized', {
+    TweenLite.to(this.cardsNode, .6, {
+      scrollTo: { y: 0 },
       ease: Sine.easeOut,
-      onComplete: () => this.setState({ minimized: true })
     })
   }
 
