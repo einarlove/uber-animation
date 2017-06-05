@@ -3,6 +3,15 @@ import styled from 'styled-components'
 import IOSStatusBar from './IOSStatusBar'
 import { TimelineMax, TweenLite, Sine, Linear } from 'gsap'
 import registerScrollListener from './registerScrollListener'
+import 'gsap/ScrollToPlugin'
+
+const mapRange = (value, in_min, in_max, out_min, out_max) => (
+  (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+)
+
+const mapRangeLimit = (value, in_min, in_max, out_min, out_max) => (
+  Math.max(out_min, Math.min(out_max, mapRange(value, in_min, in_max, out_min, out_max)))
+)
 
 const Container = styled.div`
   position: absolute;
@@ -14,7 +23,6 @@ const Container = styled.div`
   flex-direction: column;
   background-color: black;
   pointer-events: none;
-  overflow: scroll;
 `
 
 const Header = styled.header`
@@ -42,8 +50,8 @@ const HeaderTitle = styled.div`
 
 const Cards = styled.div`
   overflow: scroll;
+  -webkit-overflow-scrolling: touch;
   pointer-events: auto;
-  padding-top: 60px;
 `
 
 const Card = styled.div`
@@ -64,15 +72,20 @@ export default class extends React.Component {
     minimized: true,
   }
 
+  scrollPosition = {
+    scrollTop: 0,
+  }
+
   componentDidMount() {
     registerScrollListener(this.onScroll, this.cardsNode)
-    const forcedScroll = { scrollTop: -1 }
+    this.totalScrollLength = this.cardsNode.offsetHeight - 70
+    this.semiExpandedAnchor = this.totalScrollLength - 55
+    const scrollPosition = {}
 
-    this.timeline = new TimelineMax({
-      paused: true,
-    })
+    this.timeline = new TimelineMax({ paused: true })
       .set(this.cardsNode, {
         clipPath: 'inset(0px -1px)',
+        paddingTop: this.totalScrollLength,
       })
       .set(this.titleNode, {
         force3D: false,
@@ -86,17 +99,42 @@ export default class extends React.Component {
           y: 55,
           ease: Linear.easeNone,
         }, 0)
+        .fromTo(scrollPosition, 1, { tween: 0 }, {
+          tween: 1,
+          onStart: () => {
+            scrollPosition.start = this.cardsNode.scrollTop
+            scrollPosition.end = this.semiExpandedAnchor
+          },
+          onUpdate: () => {
+            this.cardsNode.scrollTop = mapRange(
+              scrollPosition.tween, 0, 1,
+              scrollPosition.start, scrollPosition.end
+            )
+          }
+        }, 0)
 
       .addLabel('semi-expanded')
+        .fromTo(scrollPosition, 1, { tween: 0 }, {
+          tween: 1,
+          onStart: () => {
+            scrollPosition.start = this.semiExpandedAnchor
+            scrollPosition.end = 0
+          },
+          onUpdate: () => {
+            this.cardsNode.scrollTop = mapRange(
+              scrollPosition.tween, 0, 1,
+              scrollPosition.start, scrollPosition.end
+            )
+          }
+        }, 1)
         .to(this.titleNode, 0.6, {
           opacity: 0,
           y: 130,
         }, 1)
-        .to(this.node, .8, {
+        .to(this.node, .4, {
           backgroundColor: 'transparent',
-        }, 1.2)
+        }, 1.6)
         .to(this.cardsNode, 1, {
-          y: this.cardsNode.offsetHeight - 125,
           borderRadius: 4,
           clipPath: 'inset(0 8px)',
         }, 1)
@@ -106,7 +144,23 @@ export default class extends React.Component {
   }
 
   onScroll = () => {
-    this.timeline.seek(Math.max(0, 1 - (this.cardsNode.scrollTop / 60)))
+    const scrollTop = this.cardsNode.scrollTop
+
+    const expandTween = mapRangeLimit(
+      scrollTop, this.totalScrollLength, this.semiExpandedAnchor,
+      this.timeline.getLabelTime('expanded'), this.timeline.getLabelTime('semi-expanded')
+    )
+    const semiExpandTween = mapRangeLimit(
+      scrollTop, this.semiExpandedAnchor, 0,
+      0, this.timeline.getLabelTime('minimized') - this.timeline.getLabelTime('semi-expanded')
+    )
+
+    const position = expandTween + semiExpandTween
+
+    this.timeline.seek(position)
+
+    // console.log('on scroll', scrollTop)
+    this.scrollPosition.scrollTop = scrollTop
   }
 
   expand = () => {
@@ -119,17 +173,10 @@ export default class extends React.Component {
 
   minimize = () => {
     this.timeline.timeScale(1.5)
-    const scrollDuration = 0.001 * this.cardsNode.scrollTop
 
-    TweenLite.to(this.cardsNode, scrollDuration, {
-      scrollTo: { y: 0 },
-      ease: Linear.easeNone,
-      onComplete: () => {
-        this.timeline.tweenTo('minimized', {
-          ease: Sine.easeOut,
-          onComplete: () => this.setState({ minimized: true })
-        })
-      }
+    this.timeline.tweenTo('minimized', {
+      ease: Sine.easeOut,
+      onComplete: () => this.setState({ minimized: true })
     })
   }
 
