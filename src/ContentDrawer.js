@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import IOSStatusBar from './IOSStatusBar'
-import { TimelineMax, TweenLite, Sine, Cubic, Linear } from 'gsap'
+import { TimelineMax, TweenLite, Cubic, Linear } from 'gsap'
 import registerScrollListener from './registerScrollListener'
 import 'gsap/ScrollToPlugin'
 
@@ -53,6 +53,15 @@ const Cards = styled.div`
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   pointer-events: auto;
+
+  ${props => props.minimized && `
+    pointer-events: none;
+  `}
+`
+
+const CardsInner = styled.div`
+  overflow: hidden;
+  pointer-events: auto;
 `
 
 const Card = styled.div`
@@ -71,17 +80,20 @@ const MenuButton = styled.div`
 export default class extends React.Component {
   state = {
     minimized: true,
+    whiteStatusBar: false,
   }
 
   componentDidMount() {
     registerScrollListener(this.onScroll, this.cardsNode)
-    this.totalScrollLength = this.cardsNode.offsetHeight - 70
+    this.cardsInnerNode.addEventListener('touchstart', this.onTouchStart)
+
+    this.totalScrollLength = this.cardsNode.offsetHeight - 60
     this.semiExpandedAnchor = this.totalScrollLength - 55
 
     this.timeline = new TimelineMax({ paused: true })
-      .set(this.cardsNode, {
-        clipPath: 'inset(0px -1px)',
-        paddingTop: this.totalScrollLength,
+      .set(this.cardsInnerNode, {
+        transformOrigin: 'center top',
+        marginTop: this.totalScrollLength,
       })
       .set(this.titleNode, {
         force3D: false,
@@ -98,22 +110,30 @@ export default class extends React.Component {
       }, 0)
 
       .addLabel('semi-expanded')
+      .addCallback(() => this.setState({ minimized: false }))
 
       .to(this.node, .4, {
         backgroundColor: 'transparent',
       }, 1.6)
-      .to(this.titleNode, 0.6, {
+      .to(this.titleNode, 1, {
         opacity: 0,
         y: 130,
       }, 1)
-      .to(this.cardsNode, 1, {
+      .to(this.cardsInnerNode, 1, {
         borderRadius: 4,
-        clipPath: 'inset(0 8px)',
+        scale: 0.95,
       }, 1)
+      .addCallback(() =>
+        this.setState({ whiteStatusBar: true })
+      , 1.6)
+      .addCallback(() =>
+        this.setState({ whiteStatusBar: false })
+      , 1.7)
 
       .addLabel('minimized')
+      .addCallback(() => this.setState({ minimized: true }))
 
-    this.timeline.seek('semi-expanded')
+    this.timeline.seek('semi-expanded', true)
   }
 
   onScroll = () => {
@@ -128,7 +148,13 @@ export default class extends React.Component {
       0, this.timeline.getLabelTime('minimized') - this.timeline.getLabelTime('semi-expanded')
     )
 
-    this.timeline.seek(expandTween + semiExpandTween)
+    this.timeline.seek(expandTween + semiExpandTween, false)
+  }
+
+  onTouchStart = () => {
+    if (this.state.minimized) {
+      this.setState({ minimized: false })
+    }
   }
 
   expand = () => {
@@ -139,9 +165,10 @@ export default class extends React.Component {
   }
 
   minimize = () => {
-    TweenLite.to(this.cardsNode, .6, {
+    const duration = 0.4 + ((this.cardsNode.scrollTop - this.semiExpandedAnchor) / 100 * 0.2)
+    TweenLite.to(this.cardsNode, duration, {
       scrollTo: { y: 0 },
-      ease: Sine.easeOut,
+      ease: Cubic.easeOut,
     })
   }
 
@@ -163,20 +190,22 @@ export default class extends React.Component {
 
   render() {
     return (
-      <Container
-        innerRef={ref => this.node = ref}
-        onClick={this.onClick}
-        minimized={this.state.minimized}
-      >
-        <IOSStatusBar white />
+      <Container innerRef={ref => this.node = ref} onClick={this.onClick}>
+        <IOSStatusBar white={this.state.whiteStatusBar} />
         <Header>
           <MenuButton>{upArrow}</MenuButton>
           <HeaderTitle innerRef={ref => this.titleNode = ref}>Messages</HeaderTitle>
         </Header>
 
-        <Cards innerRef={ref => this.cardsNode = ref} onClick={this.onCardsClick}>
-          <Card background="/free-rides-card.png" ratio={552 / 640} />
-          <Card background="/shortcut-card.png" ratio={682 / 640} />
+        <Cards
+          innerRef={ref => this.cardsNode = ref}
+          onClick={this.onCardsClick}
+          minimized={this.state.minimized}
+        >
+          <CardsInner innerRef={ref => this.cardsInnerNode = ref}>
+            <Card background="/free-rides-card.png" ratio={552 / 640} />
+            <Card background="/shortcut-card.png" ratio={682 / 640} />
+          </CardsInner>
         </Cards>
       </Container>
     )
