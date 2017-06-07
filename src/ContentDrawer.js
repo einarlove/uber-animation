@@ -54,7 +54,7 @@ const Cards = styled.div`
   -webkit-overflow-scrolling: touch;
   pointer-events: auto;
 
-  ${props => props.minimized && `
+  ${props => props.locked && `
     pointer-events: none;
   `}
 `
@@ -81,6 +81,7 @@ export default class extends React.Component {
   state = {
     minimized: true,
     whiteStatusBar: false,
+    locked: true,
   }
 
   componentDidMount() {
@@ -131,7 +132,10 @@ export default class extends React.Component {
       , 1.7)
 
       .addLabel('minimized')
-      .addCallback(() => this.setState({ minimized: true }))
+      .addCallback(() => this.setState({
+        minimized: true,
+        locked: true,
+      }))
 
     this.timeline.seek('semi-expanded', true)
   }
@@ -151,12 +155,6 @@ export default class extends React.Component {
     this.timeline.seek(expandTween + semiExpandTween, false)
   }
 
-  onTouchStart = () => {
-    if (this.state.minimized) {
-      this.setState({ minimized: false })
-    }
-  }
-
   expand = () => {
     TweenLite.to(this.cardsNode, .5, {
       scrollTo: { y: this.semiExpandedAnchor },
@@ -172,19 +170,36 @@ export default class extends React.Component {
     })
   }
 
+  isMinimized() {
+    return this.timeline && this.timeline.currentLabel() === 'minimized'
+  }
+
   onClick = () => {
     if (!this.isMinimized()) {
       this.minimize()
     }
   }
 
-  isMinimized() {
-    return this.timeline && this.timeline.currentLabel() === 'minimized'
-  }
 
   onCardsClick = () => {
     if (this.isMinimized()) {
       this.expand()
+    }
+  }
+
+  onTouchStart = () => {
+    if (this.state.minimized) {
+      this.setState({ locked: false })
+    }
+  }
+
+  unlock = () => {
+    this.setState({ locked: false })
+  }
+
+  lock = () => {
+    if (this.state.minimized) {
+      this.setState({ locked: true })
     }
   }
 
@@ -200,9 +215,15 @@ export default class extends React.Component {
         <Cards
           innerRef={ref => this.cardsNode = ref}
           onClick={this.onCardsClick}
-          minimized={this.state.minimized}
+          locked={this.state.locked}
         >
-          <CardsInner innerRef={ref => this.cardsInnerNode = ref}>
+          <CardsInner
+            innerRef={ref => this.cardsInnerNode = ref}
+            onTouchStart={this.unlock}
+            onMouseOver={this.unlock}
+            onMouseLeave={this.lock}
+            onTouchLeave={this.lock}
+          >
             <Card background="/free-rides-card.png" ratio={552 / 640} />
             <Card background="/shortcut-card.png" ratio={682 / 640} />
           </CardsInner>
