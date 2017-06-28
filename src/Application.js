@@ -1,6 +1,5 @@
 import React from 'react'
 import styled from 'styled-components'
-import MobileFrame from './MobileFrame'
 import SearchMap from './SearchMap'
 import ContentDrawer from './ContentDrawer'
 
@@ -37,22 +36,119 @@ const Container = styled.div`
   }
 
   display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  min-height: 100vh;
+  background: #fafafa;
+
+  @media (max-width: 900px) {
+    flex-direction: column-reverse;
+  }
+`
+const MobileView = styled.div`
+  background: white;
+  position: relative;
+  width: 320px;
+  height: 568px;
+  box-shadow: 0 2px 80px 0 rgba(0, 0, 0, .1);
+  border-radius: 2px;
+  overflow: hidden;
+
+  display: flex;
   flex-direction: column;
-  flex: auto;
+
+  @media (max-width: 600px) {
+    width: 100%;
+    height: 100vh;
+    box-shadow: none;
+  }
+`
+
+
+const Description = styled.main`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 500px;
+  padding: 3em;
+  line-height: 2.1;
+  color: #222;
+
+  @media (max-width: 600px) {
+    font-size: .875em;
+    padding: 3em 1.5em;
+  }
+
+
+  .kicker {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    letter-spacing: 0.5px;
+    margin-bottom: .4em;
+  }
+
+  h1 {
+    font-weight: 300;
+    margin: 0;
+    font-size: 2.5em;
+    line-height: 1.2;
+
+    @media (max-width: 340px) {
+      font-size: 2.2em;
+    }
+  }
+
+  h2 {
+    margin: 1em 0 0;
+    font-size: 0.875em;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  h1 + p {
+    margin-top: 1.2em;
+  }
+
+  ul {
+    margin: .1em 0 1em;
+    padding-left: 2em;
+    list-style: square;
+  }
+
+  li {
+    line-height: 1.6;
+    margin-top: .6em;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid #333;
+  }
 `
 
 export default () => (
-  <MobileFrame>
-    <Container>
+  <Container>
+    <MobileView>
       <SearchMap />
       <ContentDrawer />
-    </Container>
-  </MobileFrame>
+    </MobileView>
+
+    <Description>
+      <div className="kicker">Work in progress</div>
+      <h1>Uber animations</h1>
+      <p>The Uber app have some pretty neat animations on interaction. Lets try to recreate them.</p>
+
+      <h2>Caveats</h2>
+      <ul>
+        <li>Only tested on Chrome and Safari</li>
+        <li>Chained by the web technologies</li>
+        <li>Assumes your scrollbars are hidden</li>
+      </ul>
+
+      <p>You can view the source at <a href="/_src">_/src</a> or on <a href="https://github.com/einarlove/uber-animation">github</a>.</p>
+    </Description>
+  </Container>
 )
-
-
-/*
- Note
- https://greensock.com/docs/#/HTML5/GSAP/Utils/Draggable/
- https://www.dropbox.com/work/personal?preview=Uber+animations.mov
-*/
