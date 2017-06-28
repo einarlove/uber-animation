@@ -148,7 +148,7 @@ export default () => (
         <li>Assumes your scrollbars are hidden</li>
       </ul>
 
-      <p>You can view the source at <a href="/_src">_/src</a> or on <a href="https://github.com/einarlove/uber-animation">github</a>.</p>
+      <p>You can view the source on <a href="https://github.com/einarlove/uber-animation">github</a>.</p>
     </Description>
   </Container>
 )
